@@ -1,0 +1,72 @@
+---
+##
+## RedHat Repository for Jenkins
+## https://pkg.jenkins.io/redhat-stable/
+##
+## AdditionalResources/Repositories/GoogleYumRepos - CentOS Wiki
+## https://wiki.centos.org/AdditionalResources/Repositories/GoogleYumRepos
+##
+## Linux Software Repositories - Google
+## https://www.google.com/linuxrepositories/
+##
+
+# tasks file for setup-jenkins
+- name: Download the Jenkins repository file
+  become: True
+  get_url:
+    url: https://pkg.jenkins.io/redhat-stable/jenkins.repo
+    dest: /etc/yum.repos.d/jenkins.repo
+    mode: 0644
+    owner: root
+    group: root
+    seuser: system_u
+    serole: object_r
+    setype: system_conf_t
+    selevel: s0
+
+- name: Import a gpg key for the Jenkins repository
+  become: True
+  rpm_key:
+    key: https://pkg.jenkins.io/redhat-stable/jenkins.io.key
+
+- name: Add the Google repository
+  become: True
+  yum_repository:
+    name: google
+    description: Google - $basearch
+    baseurl: http://dl.google.com/linux/rpm/stable/$basearch
+    enabled: yes
+    gpgcheck: yes
+    gpgkey:
+      - https://dl.google.com/linux/linux_signing_key.pub
+
+- name: Install EPEL repository
+  become: True
+  package:
+    name: "{{ item }}"
+    update_cache: yes
+    state: latest
+  with_items:
+    - epel-release
+
+- name: Install packages
+  become: True
+  package:
+    name: "{{ item }}"
+    update_cache: yes
+    state: latest
+  with_items:
+    - "@development"
+    - java-1.8.0-openjdk-devel
+    - xorg-x11-server-Xvfb
+    - firefox
+    - google-chrome-stable
+    - chromedriver
+    - jenkins
+
+- name: Enable and start Jenkins
+  become: True
+  systemd:
+    name: jenkins
+    enabled: yes
+    state: started
