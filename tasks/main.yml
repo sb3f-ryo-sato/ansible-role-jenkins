@@ -3,11 +3,11 @@
 ## RedHat Repository for Jenkins
 ## https://pkg.jenkins.io/redhat-stable/
 ##
-## AdditionalResources/Repositories/GoogleYumRepos - CentOS Wiki
-## https://wiki.centos.org/AdditionalResources/Repositories/GoogleYumRepos
-##
 ## Linux Software Repositories - Google
 ## https://www.google.com/linuxrepositories/
+##
+## AdditionalResources/Repositories/GoogleYumRepos - CentOS Wiki
+## https://wiki.centos.org/AdditionalResources/Repositories/GoogleYumRepos
 ##
 
 # tasks file for setup-jenkins
@@ -40,15 +40,6 @@
     gpgkey:
       - https://dl.google.com/linux/linux_signing_key.pub
 
-- name: Install EPEL repository
-  become: True
-  package:
-    name: "{{ item }}"
-    update_cache: yes
-    state: latest
-  with_items:
-    - epel-release
-
 - name: Install packages
   become: True
   package:
@@ -57,12 +48,25 @@
     state: latest
   with_items:
     - "@development"
+    - unzip
     - java-1.8.0-openjdk-devel
     - xorg-x11-server-Xvfb
     - firefox
     - google-chrome-stable
-    - chromedriver
     - jenkins
+
+- name: Check the latest version of chromedriver
+  uri:
+    url: https://chromedriver.storage.googleapis.com/LATEST_RELEASE
+    return_content: yes
+  register: chromedriver_version
+  
+- name: Install chromedriver
+  become: True
+  unarchive:
+    src: "https://chromedriver.storage.googleapis.com/{{ chromedriver_version.content }}/chromedriver_linux64.zip"
+    dest: /usr/local/bin
+    remote_src: yes
 
 - name: Enable and start Jenkins
   become: True
